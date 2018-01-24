@@ -1,16 +1,20 @@
 % % Raw Data (rescaled) Extraction:
 clear; close all; clc;
-% d = dir([pwd '\S*.csv']);
-Subject = 'data\v\';
-% d = dir([Subject 'EMG_1CH_2017.10.30_10.47.35_250Hz*.csv']);
+V = 1
+if V
+    v = '\v\';
+else
+    v = '\';
+end
+Subject = ['csv\' v];
 d = dir([Subject '*.csv']);
-output_dir = ['output_dir\raw\v\'];
-mkdir(output_dir); PLOT = 0;
+PLOT = 0;
 Fs = 250;
 select_chs = 1:1; c_end = max(select_chs) + 1;
-start = 1; whop = 12; wlen = 512;
+start = 1; whop = 12; wlen = 128;
 relevant_data = [];
 Y_all = [];
+output_dir = ['output_dir\raw_' num2str(wlen) v];
 for f = 1:length(d)
     filename = d(f).name; 
     data = csvread([Subject filename]);
