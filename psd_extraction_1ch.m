@@ -22,13 +22,6 @@ for f = 1:length(d)
             disp(w)
         end
         selected_window = data(wStart(w):wEnd(w), :);
-%             if wlen == 256
-%                 temp_4 = tf_psd_rescale_w256(selected_window(:,select_chs));
-%             elseif wlen == 384
-%                 temp_4 = tf_psd_rescale_w384(selected_window(:,select_chs));
-%             elseif wlen == 512
-%                 temp_4 = tf_psd_rescale_w512(selected_window(:,select_chs));
-%             end
         for ch = 1:length(select_chs)
             [P(w, ch, :), F] = welch_estimator_ORIG(selected_window(:,ch), Fs, hann(wlen)); %pass unfiltered
             P(w, ch, :) = rescale_minmax(P(w, ch, :)); % rescale on a per-channel basis

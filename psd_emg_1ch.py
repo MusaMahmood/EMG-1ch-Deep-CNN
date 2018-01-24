@@ -20,7 +20,8 @@ from tensorflow.python.tools import optimize_for_inference_lib
 # CONSTANTS:
 TIMESTAMP_START = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H.%M.%S')
 VERSION_NUMBER = 'v0.2.0'
-TRAINING_FOLDER_PATH = r'psd_5class_w256/'
+win_len = 512
+TRAINING_FOLDER_PATH = r'data_' + str(win_len)
 DESCRIPTION_TRAINING_DATA = 'PSD_1ch_EMG'
 TEST_FOLDER_PATH = TRAINING_FOLDER_PATH + '/v'
 EXPORT_DIRECTORY = 'model_exports_' + VERSION_NUMBER + '/'
@@ -32,8 +33,8 @@ KEY_X_DATA_DICTIONARY = 'relevant_data'
 KEY_Y_DATA_DICTIONARY = 'Y'
 
 # IMAGE SHAPE/CHARACTERISTICS
-DATA_WINDOW_SIZE = 128
-NUMBER_CLASSES = 5
+DATA_WINDOW_SIZE = win_len // 2
+NUMBER_CLASSES = 4
 SELECT_DATA_CHANNELS = np.asarray(range(1, 2))
 NUMBER_DATA_CHANNELS = SELECT_DATA_CHANNELS.shape[0]  # Selects first int in shape
 TOTAL_DATA_CHANNELS = NUMBER_DATA_CHANNELS
@@ -225,6 +226,8 @@ b_fco = bias_variable(BIAS_VAR_FC_OUTPUT)
 y_conv = tf.matmul(h_fc1_drop, W_fco) + b_fco
 outputs = tf.nn.softmax(y_conv, name=output_node_name)
 
+prediction = tf.argmax(outputs, 1)
+
 # training and reducing the cost/loss function
 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=y_conv))
 train_step = tf.train.AdamOptimizer(LEARNING_RATE).minimize(cross_entropy)
@@ -241,7 +244,6 @@ x_data, y_data = load_data(TRAINING_FOLDER_PATH)
 x_val_data, y_val_data = load_data(TEST_FOLDER_PATH)
 # Split training set:
 x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, train_size=0.75, random_state=1)
-# x_test, x_val_data, y_test, y_val_data = train_test_split(x_test, y_test, train_size=0.75, random_state=1)
 
 # TRAIN ROUTINE #
 init_op = tf.global_variables_initializer()
@@ -300,19 +302,18 @@ with tf.Session(config=config) as sess:
     # Holdout Validation Accuracy:
     print("Holdout Validation:", sess.run(accuracy, feed_dict={x: x_val_data, y: y_val_data,
                                                                keep_prob: 1.0}))
+    y_val_tf = np.zeros([x_val_data.shape[0]], dtype=np.int32)
+    predictions = np.zeros([x_val_data.shape[0]], dtype=np.int32)
+    for i in range(0, x_val_data.shape[0]):
+        predictions[i] = sess.run(prediction,
+                                  feed_dict={x: x_val_data[i].reshape([1, NUMBER_DATA_CHANNELS, DATA_WINDOW_SIZE]),
+                                             y: y_val_data[i].reshape([1, NUMBER_CLASSES]), keep_prob: 1.0})
+        for c in range(0, NUMBER_CLASSES):
+            if y_val_data[i][c]:
+                y_val_tf[i] = c
 
-    # Get one sample and see what it outputs (Activations?) ?
-    # image_output_folder_name = EXPORT_DIRECTORY + DESCRIPTION_TRAINING_DATA + TIMESTAMP_START + '/'
-    # feature_map_folder_name = EXPORT_DIRECTORY + 'feature_maps_' + TIMESTAMP_START + '_wlen' + str(DATA_WINDOW_SIZE) \
-    #                           + '/'
-    # os.makedirs(feature_map_folder_name)
-    # Extract weights of following layers
-    # get_all_activations(x_val_data, feature_map_folder_name)
-
-    # print('weights', weights)
-    # Read from the tail of the arg-sort to find the n highest elements:
-    # weights_sorted = np.argsort(weights)[::-1]  # [:2] select last 2
-    # print('weights_sorted: ', weights_sorted)
+    tf_confusion_matrix = tf.confusion_matrix(labels=y_val_tf, predictions=predictions, num_classes=NUMBER_CLASSES)
+    print('Confusion Matrix: \n\n', tf.Tensor.eval(tf_confusion_matrix, feed_dict=None, session=None))
 
     user_input = input('Export Current Model?')
     if user_input == "1" or user_input.lower() == "y":
