@@ -1,3 +1,5 @@
 .idea/
 *.mat
 model_exports_v0.2.0/
+data/
+*.csv
