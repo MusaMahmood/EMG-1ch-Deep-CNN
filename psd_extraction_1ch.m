@@ -1,13 +1,13 @@
 % % PSD Extraction:
 %% PSD Extraction:
 clear; close all; clc;
-Subject = 'data\v\';
+Subject = 'csv\v\';
 d = dir([Subject '*.csv']);
-output_dir = ['output_dir\psd\' Subject];
+output_dir = ['output_dir\psd\' 'v\'];
 mkdir(output_dir); PLOT = 1;
 Fs = 250;
 select_chs = 1:1; c_end = max(select_chs) + 1;
-start = 1; whop = 32; wlen = 256;
+start = 1; whop = 12; wlen = 256;
 relevant_data = [];
 Y_all = [];
 for f = 1:length(d)
