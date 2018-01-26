@@ -21,11 +21,11 @@ from tensorflow.python.tools import optimize_for_inference_lib
 TIMESTAMP_START = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H.%M.%S')
 VERSION_NUMBER = 'v0.2.0'
 win_len = 128
-TRAINING_FOLDER_PATH = r'output_dir/raw_' + str(win_len)
+TRAINING_FOLDER_PATH = r'output_dir/hpf_scaled_up_4c_' + str(win_len)
 DESCRIPTION_TRAINING_DATA = 'PSD_1ch_EMG'
 TEST_FOLDER_PATH = TRAINING_FOLDER_PATH + '/v'
 EXPORT_DIRECTORY = 'model_exports_' + VERSION_NUMBER + '/'
-MODEL_NAME = 'ssvep_net_8ch'
+MODEL_NAME = 'emg_2cnn_1ch_wlen' + str(win_len)
 CHECKPOINT_FILE = EXPORT_DIRECTORY + MODEL_NAME + '.ckpt'
 
 # MATLAB DICT KEYS
@@ -118,13 +118,14 @@ def bias_variable(shape):
     return tf.Variable(initial)
 
 
-# Convolution and max-pooling functions
-def conv2d(x_, weights_):
-    return tf.nn.conv2d(x_, weights_, strides=STRIDE_CONV2D, padding='SAME')
+def tf_conv(x_, w_, b_, strides):
+    x_ = tf.nn.conv2d(x_, w_, strides=strides, padding='SAME')
+    x_ = tf.nn.bias_add(x_, b_)
+    return tf.nn.relu(x_)
 
 
-def max_pool_2x2(x_):
-    return tf.nn.max_pool(x_, ksize=MAX_POOL_K_SIZE, strides=MAX_POOL_STRIDE, padding='SAME')
+def tf_max_pool(x_, kernel_size, strides):
+    return tf.nn.max_pool(x_, ksize=kernel_size, strides=strides, padding='SAME')
 
 
 def get_activations(layer, input_val, shape, directory, file_name, sum_all=False):
@@ -198,15 +199,17 @@ x_input = tf.reshape(x, [-1, *DEFAULT_IMAGE_SHAPE, 1])
 W_conv1 = weight_variable(WEIGHT_VAR_CL1)
 b_conv1 = bias_variable([BIAS_VAR_CL1])
 
-h_conv1 = tf.nn.relu(conv2d(x_input, W_conv1) + b_conv1)
-h_pool1 = max_pool_2x2(h_conv1)
+# h_conv1 = tf.nn.relu(conv2d(x_input, W_conv1) + b_conv1)
+h_conv1 = tf_conv(x_input, W_conv1, b_conv1, STRIDE_CONV2D_L1)
+h_pool1 = tf_max_pool(h_conv1, MAX_POOL_K_SIZE, MAX_POOL_STRIDE)
 
 # second convolution and pooling
 W_conv2 = weight_variable(WEIGHT_VAR_CL2)
 b_conv2 = bias_variable([BIAS_VAR_CL2])
 
-h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
-h_pool2 = max_pool_2x2(h_conv2)
+# h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+h_conv2 = tf_conv(h_pool1, W_conv2, b_conv2, STRIDE_CONV2D_L2)
+h_pool2 = tf_max_pool(h_conv2, MAX_POOL_K_SIZE, MAX_POOL_STRIDE)
 
 # the input should be shaped/flattened
 h_pool2_flat = tf.reshape(h_pool2, MAX_POOL_FLAT_SHAPE_FC1)
@@ -223,7 +226,8 @@ h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 W_fco = weight_variable(WEIGHT_VAR_FC_OUTPUT)
 b_fco = bias_variable(BIAS_VAR_FC_OUTPUT)
 
-y_conv = tf.matmul(h_fc1_drop, W_fco) + b_fco
+y_conv = tf.add(tf.matmul(h_fc1_drop, W_fco), b_fco)
+
 outputs = tf.nn.softmax(y_conv, name=output_node_name)
 
 prediction = tf.argmax(outputs, 1)

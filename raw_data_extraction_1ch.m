@@ -14,7 +14,11 @@ select_chs = 1:1; c_end = max(select_chs) + 1;
 start = 1; whop = 12; wlen = 128;
 relevant_data = [];
 Y_all = [];
-output_dir = ['output_dir\raw_' num2str(wlen) v];
+[b, a] = butter(3, 1.5*2/Fs, 'high');
+output_dir = ['output_dir\hpf_scaled_up_' num2str(wlen) v];
+for i = 1:length(d)
+    DATA{i} = csvread([Subject d(i).name]);
+end
 for f = 1:length(d)
     filename = d(f).name; 
     data = csvread([Subject filename]);
@@ -28,7 +32,10 @@ for f = 1:length(d)
         end
         selected_window = data(wStart(w):wEnd(w), :);
         for ch = 1:length(select_chs)
-            file_data(w, ch, :) = rescale_minmax(selected_window(:, ch)); % rescale on a per-channel basis
+%             file_data(w, ch, :) = rescale_minmax(selected_window(:, ch)); % rescale on a per-channel basis
+%             file_data(w, ch, :) = filtfilt(b,a,selected_window(:,ch)).*20;
+            file_data(w, ch, :) = emg_hpf_upscale(selected_window(:,ch), 20);
+            p2p(f*w) = peak2peak(squeeze(file_data(w, ch, :)));
         end
     end
     relevant_data = [relevant_data; file_data];
