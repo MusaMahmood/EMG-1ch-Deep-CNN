@@ -32,7 +32,7 @@ CHECKPOINT_FILE = EXPORT_DIRECTORY + MODEL_NAME + '.ckpt'
 KEY_X_DATA_DICTIONARY = 'relevant_data'
 KEY_Y_DATA_DICTIONARY = 'Y'
 
-# IMAGE SHAPE/CHARACTERISTICS
+# IMAGE SHAPE/CHARACTERISTIC1
 DATA_WINDOW_SIZE = win_len
 NUMBER_CLASSES = 4
 SELECT_DATA_CHANNELS = np.asarray(range(1, 2))
@@ -46,9 +46,11 @@ NUMBER_STEPS = 20000
 TRAIN_BATCH_SIZE = 256
 TEST_BATCH_SIZE = 100
 LEARNING_RATE = 1e-5  # 'Step size' on n-D optimization plane
-STRIDE_CONV2D = [1, 1, 1, 1]
-MAX_POOL_K_SIZE = [1, 2, 2, 1]
-MAX_POOL_STRIDE = [1, 2, 2, 1]  # May need to reduce batch size for this.
+STRIDE_CONV2D_L1 = [1, 1, 1, 1]
+STRIDE_CONV2D_L2 = [1, 1, 1, 1]
+
+MAX_POOL_K_SIZE = [1, 1, 2, 1]
+MAX_POOL_STRIDE = [1, 1, 2, 1]  # May need to reduce batch size for this.
 
 BIAS_VAR_CL1 = 32
 BIAS_VAR_CL2 = 64
