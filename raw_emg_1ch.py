@@ -220,7 +220,7 @@ h_pool2_flat = tf.reshape(h_pool2, MAX_POOL_FLAT_SHAPE_FC1)
 W_fc1 = weight_variable(WEIGHT_VAR_FC1)
 b_fc1 = bias_variable(BIAS_VAR_FC1)
 
-h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+h_fc1 = tf.nn.relu(tf.add(tf.matmul(h_pool2_flat, W_fc1), b_fc1))
 
 h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
